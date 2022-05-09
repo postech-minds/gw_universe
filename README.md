@@ -2,7 +2,7 @@
 
 ## Installation
 ~~~
-git clone https://github.com/minds/gw_universe.git
+git clone https://github.com/postech-minds/gw_universe.git
 cd gw_universe
 pip install -e .
 ~~~
