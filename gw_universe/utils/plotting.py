@@ -35,7 +35,7 @@ def plot_data(data, target='val_recall', smooth=1, hue='exp_name', **kwargs):
     if smooth > 1:
         y = np.ones(smooth)  # filter
         for datum in data:
-            x = np.asarry(datum[target])
+            x = np.asarray(datum[target])
             z = np.ones(len(x))  # Dummy vector for counting instances
             smoothed_x = np.convolve(x, y, 'same') / np.convolve(z, y, 'same')
             datum[target] = smoothed_x
@@ -43,10 +43,12 @@ def plot_data(data, target='val_recall', smooth=1, hue='exp_name', **kwargs):
     if isinstance(data, list):
         data = pd.concat(data, ignore_index=True)
 
+    ymin = data[target].min()
+
     # Plotting
     sns.set(style='darkgrid', font_scale=1.5)
     sns.lineplot(data=data, x='epoch', y=target, hue=hue, **kwargs)
-    plt.ylim(0.0, 1.0)
+    plt.ylim(ymin, 1.0)
     plt.legend(loc='best').set_draggable(True)
     plt.tight_layout()
 
@@ -55,6 +57,7 @@ def get_arguments():
     parser = argparse.ArgumentParser()
     parser.add_argument('--dir_results', type=str, default='./results')
     parser.add_argument('--target', type=str, default='val_loss')
+    parser.add_argument('--smooth', type=int, default=1)
     parser.add_argument('--save', type=str, default=None)
     args = parser.parse_args()
 
@@ -67,10 +70,9 @@ def main():
 
     # Plotting
     plt.figure(figsize=(8, 6))
-    plot_data(data)
+    plot_data(data, args.target, smooth=args.smooth)
     if args.save:
         plt.savefig(args.save)
-    plt.show()
 
 
 if __name__ == '__main__':

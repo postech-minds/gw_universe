@@ -12,7 +12,8 @@ from sklearn.model_selection import StratifiedKFold
 def get_arguments():
     parser = argparse.ArgumentParser()
     parser.add_argument('--dir_data', type=str, default='./data/20220209_LOAO_check')
-    parser.add_argument('--exp_name', type=str, default='baseline')
+    parser.add_argument('--exp_name', type=str, default='label_smoothing')
+    parser.add_argument('--label_smoothing', type=float, default=0.2)
     parser.add_argument('--seed', type=str, default=0)
     parser.add_argument('--num_folds', type=int, default=5)
     parser.add_argument('--epochs', type=int, default=30)
@@ -41,7 +42,7 @@ def main():
         valid_loader = InMemoryDataLoader(X_valid, y_valid, shuffle=True)
 
         optimizer = tf.keras.optimizers.Adam()
-        loss = tf.keras.losses.BinaryCrossentropy()
+        loss = tf.keras.losses.BinaryCrossentropy(label_smoothing=args.label_smoothing)
         metrics = [
             tf.keras.metrics.BinaryAccuracy(),
             tf.keras.metrics.Recall(),
