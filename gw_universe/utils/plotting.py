@@ -19,6 +19,8 @@ def get_datasets(logdir):
         for file in files:
             if 'csv' in file:
                 _, exp_name = os.path.split(root)
+                exp_name = exp_name.replace('-', '+')
+                exp_name = exp_name.replace('_', ' ')
                 fold = file.split('.')[0]
 
                 exp_data = pd.read_csv(os.path.join(root, file))

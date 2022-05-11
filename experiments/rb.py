@@ -13,7 +13,10 @@ from sklearn.utils import class_weight
 def get_arguments():
     parser = argparse.ArgumentParser()
     parser.add_argument('--dir_data', type=str, default='./data/20220209_LOAO_check')
-    parser.add_argument('--exp_name', type=str, default='class_weight')
+    parser.add_argument('--exp_name', type=str, default='baseline')
+    parser.add_argument('--resampling', type=str, default=None)
+    parser.add_argument('--class_weight', type=bool, default=False)
+    parser.add_argument('--label_smoothing', type=float, default=0.0)
     parser.add_argument('--seed', type=str, default=0)
     parser.add_argument('--num_folds', type=int, default=5)
     parser.add_argument('--epochs', type=int, default=30)
@@ -40,14 +43,16 @@ def main():
 
         # Comput class weights
         # ``balanced`` compute the following: n_samples / (n_classes * np.bincount(y))
-        weights = class_weight.compute_class_weight('balanced', classes=np.unique(y_train), y=y_train)
-        weights = {k: v for k, v in enumerate(weights)}
+        weights = None
+        if args.class_weight:
+            weights = class_weight.compute_class_weight('balanced', classes=np.unique(y_train), y=y_train)
+            weights = {k: v for k, v in enumerate(weights)}
 
-        train_loader = InMemoryDataLoader(X_train, y_train, shuffle=True)
-        valid_loader = InMemoryDataLoader(X_valid, y_valid, shuffle=True)
+        train_loader = InMemoryDataLoader(X_train, y_train, resampling=args.resampling, shuffle=True)
+        valid_loader = InMemoryDataLoader(X_valid, y_valid, is_train=False, shuffle=False)
 
         optimizer = tf.keras.optimizers.Adam()
-        loss = tf.keras.losses.BinaryCrossentropy()
+        loss = tf.keras.losses.BinaryCrossentropy(label_smoothing=args.label_smoothing)
         metrics = [
             tf.keras.metrics.BinaryAccuracy(),
             tf.keras.metrics.Recall(),
@@ -69,6 +74,7 @@ def main():
             verbose=0
         )
 
+        model.save(f'{log_dir}/fold{i}.h5')
         tf.keras.backend.clear_session()
 
 

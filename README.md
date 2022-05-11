@@ -10,13 +10,18 @@ pip install -e .
 ## Real vs. Bogus classification
 
 We conducted a set of experiments with different strategies to resolve the class imbalance in the Real vs. Bogus dataset
-. You can find all python scripts for the experiments in the `experiments` folder.
+. All experiments can be reproduced by running `run_all_experiments.sh`:
+~~~
+bash run_all_experiments.sh
+~~~
  
- Name                   | Description 
-:----------------------:|:----------------------------------------------------------:
- `baseline.py`          | No strategy is applied
- `label_smoothing.py`   | Label smoothing with alpha=0.2
- `class_weight.py`      | More penalties for incorrect samples in the minority class
+ Name                    | Description 
+:-----------------------:|:----------------------------------------------------------------------:
+ `baseline`              | No strategy is applied
+ `label smoothing`       | Label smoothing with alpha=0.2
+ `class weight`          | More penalties for incorrect samples in the minority class
+ `random oversampling`   | For each epoch, minor samples are oversampled to # of major samples
+ `random undersampling`  | For each epoch, major samples are undersampled to # of minor samples
 
 <br>
 
