@@ -25,7 +25,7 @@ bash run_all_experiments.sh
 
 <br>
 
-Once a set of experiments is finished, you can visualize the learning curve of a specific metric as follows:
+Once a set of experiments is finished, you can visualize the learning curves of a specific metric as follows:
 ~~~
 python gw_universe/utils/plotting.py --target val_auc --dir_results ./results --save ./results/auc.png
 python gw_universe/utils/plotting.py --target val_recall --dir_results ./results --save ./results/recall.png
@@ -39,3 +39,15 @@ This gives you a figure as below:
     <img src="results/recall.png" width="250"/>
     <img src="results/precision.png" width="250"/>
 </p>
+
+Here, the solid lines indicate the average performance over 5 folds and the bands 95% confidence intervals. To compare 
+the performance across experiments, you can visualize the bar graph by passing `--barplot` flags.
+
+~~~
+python gw_universe/utils/plotting.py --barplot --dir_results ./results --save ./results/barplot.png
+~~~
+
+Our implementation considers the average performance of last 5 epochs over 5 folds, i.e., the height of each bar in the 
+barplot indicates the average score of 25 models and the solid line corresponds to 95% confidence interval.
+
+<img src="results/barplot.png"/>
