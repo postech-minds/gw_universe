@@ -33,6 +33,11 @@ python experiments/rb.py \
     --exp_name random_underampling \
     --resampling random_undersampling
 
+# SMOTE
+python experiments/rb.py \
+    --exp_name smote \
+    --resampling smote
+
 # Plotting learning curves
 python gw_universe/utils/plotting.py --target val_auc --dir_results ./results --save ./results/auc.png
 python gw_universe/utils/plotting.py --target val_recall --dir_results ./results --save ./results/recall.png

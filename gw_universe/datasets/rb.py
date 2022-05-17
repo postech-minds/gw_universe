@@ -94,6 +94,22 @@ class InMemoryDataLoader(tf.keras.utils.Sequence):
         elif self.resampling == 'random_undersampling':
             return self.random_undersampling(self.labels)
 
+        elif self.resampling == 'smote':
+            if not hasattr(self, 'smote'):
+                self._cache = dict(
+                    images=self.images.copy(),
+                    labels=self.labels.copy()
+                )
+                self.smote = SMOTE()
+                minor_class = np.argmin(np.bincount(self.labels))
+                self._cache['minor_class'] = minor_class
+                self.smote.fit(self.images[np.where(self.labels == minor_class)])
+
+            X_gen = self.smote.generate()
+            self.images = np.concatenate((self._cache['images'], X_gen), axis=0)
+            self.labels = np.concatenate((self._cache['labels'], np.array(len(X_gen) * [self._cache['minor_class']])))
+            return np.arange(len(self.images))
+
     @staticmethod
     def random_oversampling(y):
         indices = np.arange(len(y))
@@ -121,3 +137,33 @@ class InMemoryDataLoader(tf.keras.utils.Sequence):
             resampled_indices += np.random.choice(indices[pool_indices], target_num, replace=replace).tolist()
 
         return np.array(resampled_indices)
+
+
+class SMOTE:
+    def __init__(self, k=5, n=11, noise_scale=0.001):
+        self.k = k
+        self.n = n
+        self.noise_scale = noise_scale
+        self.X = None
+        self.neigh = None
+
+    def fit(self, X):
+        self.X = X
+        n = len(X)
+        D = np.zeros((n, n))
+        for i in range(n):
+            for j in range(n):
+                D[i, j] = np.linalg.norm(X[i].flatten() - X[j].flatten())
+        self.neigh = np.argsort(D, axis=1)[:, :self.k]
+
+    def generate(self):
+        X_gen = []
+        for i, x in enumerate(self.X):
+            indices = np.random.choice(self.neigh[i], size=self.n, replace=True)
+            neighbors = self.X[indices]
+            diff = neighbors - x
+            e = self.noise_scale * np.random.normal(size=diff.shape)
+            X_gen.append(x + diff * e)
+        X_gen = np.vstack(X_gen)
+
+        return X_gen
