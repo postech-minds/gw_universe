@@ -4,6 +4,7 @@ from glob import glob
 import numpy as np
 import tensorflow as tf
 from astropy.io import fits
+from tqdm import tqdm
 
 
 def min_max_normalization(x):
@@ -22,15 +23,39 @@ def load_fits(fpath):
     return img
 
 
-def prepare_rb_dataset(dir_data):
+def prepare_rb_dataset(dir_data, channels):
     images = []
     labels = []
-    for i, cls in enumerate(['bogus', 'transient']):
-        fpath_list = glob(f'{os.path.join(dir_data, cls)}/*')
-        labels += [i] * len(fpath_list)
 
-        for fpath in fpath_list:
-            images.append(load_fits(fpath))
+    for label, cls in enumerate(['bogus', 'real']):
+        fpath_lists = []
+        for channel in channels:
+            fpath_lists.append(
+                np.sort(glob(os.path.join(dir_data, cls, f'*.{channel}.fits')))
+            )
+
+        for it in tqdm(zip(*fpath_lists), total=len(fpath_lists[0])):
+            assert len(set(map(lambda x: ''.join(x.split('.')[:-2]), it))) == 1
+
+            x = []
+            for i in it:
+                sample = fits.getdata(i)
+                maximum = sample.max()
+                minimum = sample.min()
+                sample = (sample - minimum) / (maximum - minimum)
+
+                sample = tf.keras.utils.array_to_img(sample[:, :, np.newaxis])
+                sample = sample.resize((38, 38))
+                sample = tf.keras.utils.img_to_array(sample) / 255.0
+
+                sample = (maximum - minimum) * sample + minimum
+
+                x.append(sample[:, :, 0])
+            x = np.stack(x, axis=-1)
+            x = min_max_normalization(x)
+
+            images.append(x)
+        labels += len(fpath_lists[0]) * [label]
 
     images = np.stack(images).astype(np.float32)
     labels = np.array(labels).astype(np.int64)

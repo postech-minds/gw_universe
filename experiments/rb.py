@@ -13,7 +13,9 @@ from sklearn.utils import class_weight
 def get_arguments():
     parser = argparse.ArgumentParser()
     parser.add_argument('--dir_data', type=str, default='./data/20220209_LOAO_check')
+    parser.add_argument('--dir_log', type=str, default='./results')
     parser.add_argument('--exp_name', type=str, default='baseline')
+    parser.add_argument('--channels', nargs='+', type=str, default=['sub'])
     parser.add_argument('--resampling', type=str, default=None)
     parser.add_argument('--class_weight', type=bool, default=False)
     parser.add_argument('--label_smoothing', type=float, default=0.0)
@@ -29,11 +31,11 @@ def main():
     args = get_arguments()
     seed_all(args.seed)
 
-    log_dir = os.path.join('./results', args.exp_name)
+    log_dir = os.path.join(args.dir_log, args.exp_name)
     if not os.path.exists(log_dir):
         os.makedirs(log_dir)
 
-    X, y = prepare_rb_dataset(dir_data=args.dir_data)
+    X, y = prepare_rb_dataset(dir_data=args.dir_data, channels=args.channels)
     input_shape = X.shape[1:]
 
     cv = StratifiedKFold(n_splits=args.num_folds, shuffle=True, random_state=args.seed)
