@@ -2,25 +2,86 @@ import os
 from glob import glob
 
 import numpy as np
+import pandas as pd
 import tensorflow as tf
 from astropy.io import fits
 from tqdm import tqdm
 
 
 def min_max_normalization(x):
-    minimum = np.min(x)
-    maximum = np.max(x)
-    x_normalized = (x - minimum) / (maximum - minimum)
+    m = np.min(x)
+    M = np.max(x)
 
-    return x_normalized
+    return (x - m) / (M - m)
 
 
-def load_fits(fpath):
-    img = fits.getdata(fpath)         # np.ndarray of shape (38, 38)
-    img = img[..., np.newaxis]        # (height, width, n_channels)
-    img = min_max_normalization(img)  # MinMaxNormalization
+def decode_min_max_normalization(x, m, M):
+    return (M - m) * x + m
 
-    return img
+
+def load_fits(fpath, img_size=38):
+    img = fits.getdata(fpath)
+    m, M = np.min(img), np.max(img)
+
+    img = min_max_normalization(img)  # Min-max normalization for converting data into normalized image
+    img = tf.keras.utils.array_to_img(img[:, :, np.newaxis])  # From np.ndarray to PIL.Image
+    img = img.resize((img_size, img_size))          # Resizing the image
+    img = tf.keras.utils.img_to_array(img) / 255.0  # Normalizing again
+    img = decode_min_max_normalization(img, m, M)   # Decoding min-max normalization
+
+    return img[:, :, 0]
+
+
+def create_metadata(path):
+    fpath_list = glob(os.path.join(path, '*.csv'))
+    meta = pd.DataFrame()
+    for fpath in fpath_list:
+        meta = pd.concat([meta, pd.read_csv(fpath)], axis=0, ignore_index=True)
+
+    # === Preprocessing metadata === #
+    # Removing dupilcated rows
+    meta = meta[~meta.drop('id', axis=1).duplicated()].reset_index(drop=True)
+
+    # Removing samples not yet classified
+    meta = meta[meta['input_rbclass'] != 'notyetclassified'].reset_index(drop=True)
+
+    # Removing useless columns
+    targets = ['ra_', 'dec_']
+    meta = meta.drop(targets, axis=1)
+
+    # Removing files that appear more than two times.
+    targets = meta.loc[meta['newim'].duplicated(), 'newim'].unique()
+    meta = meta[~meta['newim'].isin(targets)].reset_index(drop=True)
+    # ============================== #
+
+    # Saving
+    meta.to_csv(os.path.join(path, 'meta.csv'), index=False)
+
+
+def prepare_dataset_from_metadata(dir_data, meta, channels, obssites, img_size):
+    meta = meta[meta['obssite'].isin(obssites)].reset_index(drop=True)
+    channels = [x + 'im' for x in channels]
+
+    files = meta[channels].values
+    obssites = meta['obssite'].values
+    labels = meta['input_rbclass'].values
+    groups = meta['IMSNGname'].values
+
+    images = []
+    for i, fpaths in tqdm(enumerate(files), total=len(files)):
+        x = []
+        for fpath in fpaths:
+            fpath = os.path.join(dir_data, obssites[i], labels[i], fpath)
+            img = load_fits(fpath, img_size)
+            x.append(img)
+        x = np.stack(x, axis=-1)
+        x = min_max_normalization(x)
+        images.append(x)
+
+    images = np.stack(images).astype(np.float32)
+    labels = np.array(labels == 'real').astype(np.int64)
+
+    return images, labels, groups
 
 
 def prepare_rb_dataset(dir_data, channels):
