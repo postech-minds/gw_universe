@@ -51,3 +51,6 @@ Our implementation considers the average performance of last 5 epochs over 5 fol
 barplot indicates the average score of 25 models and the solid line corresponds to 95% confidence interval.
 
 <img src="results/barplot.png"/>
+
+## Acknowledgement
+This work was supported by the research grant from the NRF to the Center for the Gravitational-Wave Universe under the Grant Number 2021M3F7A1082053.
